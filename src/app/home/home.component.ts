@@ -1,3 +1,4 @@
+import { StoreService } from './../common/store.service';
 import { Component, OnInit } from '@angular/core';
 import { Observable, of, throwError, timer } from 'rxjs';
 import { catchError, delayWhen, finalize, map, retryWhen, shareReplay, tap } from 'rxjs/operators';
@@ -5,7 +6,7 @@ import { createHttpObservable } from '../common/util';
 import { Course } from '../model/course';
 
 @Component({
-  selector: 'home',
+  selector: 'app-home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
@@ -16,9 +17,13 @@ export class HomeComponent implements OnInit {
   beginnersCourses$: Observable<Course[]>;
   advanceCourses$: Observable<Course[]>;
 
+  constructor(private store: StoreService) {}
+
   ngOnInit() {
+    this.beginnersCourses$ = this.store.selectBeginnerCourses();
+    this.advanceCourses$ = this.store.selectAdvancedCourses();
     // this.imperativeDesign();
-    this.reactiveDesign();
+    // this.reactiveDesign();
   }
 
   private imperativeDesign(): void {

@@ -1,14 +1,15 @@
+import { StoreService } from './../common/store.service';
 import { AfterViewInit, Component, ElementRef, Inject, OnInit, ViewChild } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { Course } from "../model/course";
-import { FormBuilder, Validators, FormGroup } from "@angular/forms";
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { Course } from '../model/course';
+import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import * as moment from 'moment';
 import { fromPromise } from 'rxjs/internal-compatibility';
 import { concatMap, exhaust, exhaustMap, filter, mergeMap } from 'rxjs/operators';
 import { fromEvent } from 'rxjs';
 
 @Component({
-  selector: 'course-dialog',
+  selector: 'app-course-dialog',
   templateUrl: './course-dialog.component.html',
   styleUrls: ['./course-dialog.component.css']
 })
@@ -22,7 +23,8 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<CourseDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) course: Course) {
+    @Inject(MAT_DIALOG_DATA) course: Course,
+    private store: StoreService) {
 
     this.course = course;
 
@@ -48,6 +50,13 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
     this.dialogRef.close();
   }
 
+  onSave(): void {
+    this.store.saveCourse(this.course.id, this.form.value).subscribe(
+      () => this.close(),
+      error => console.log('Error saving course:', error)
+    );
+  }
+
   private withConcatMap(): void {
     // concatMap, is all about COMPLETION
     // with concatMap, if we care about the order of emission and subscription of inner observables, we use concatMap
@@ -61,7 +70,8 @@ export class CourseDialogComponent implements OnInit, AfterViewInit {
   }
 
   private withMergeMap(): void {
-    // mergeMap, This operator is best used when you wish to flatten an inner observable but want to manually control the number of inner subscriptions.
+    // mergeMap, This operator is best used when you wish to flatten an inner observable
+    // but want to manually control the number of inner subscriptions.
     // with mergeMap, we make operations in parallel
     this.form.valueChanges.pipe(
       filter(() => this.form.valid),
