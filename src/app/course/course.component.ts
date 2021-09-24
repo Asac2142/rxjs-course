@@ -1,24 +1,23 @@
 import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { ActivatedRoute } from "@angular/router";
-import { Course } from "../model/course";
+import { ActivatedRoute } from '@angular/router';
+import { Course } from '../model/course';
 import {
   debounceTime,
   distinctUntilChanged,
   startWith,
-  tap,
-  delay,
   map,
-  concatMap,
   switchMap,
-  withLatestFrom,
-  concatAll, shareReplay, throttle
+  throttle,
+  first,
+  take,
+  withLatestFrom
 } from 'rxjs/operators';
-import { merge, fromEvent, Observable, concat, of, interval } from 'rxjs';
+import { fromEvent, Observable, of, interval } from 'rxjs';
 import { Lesson } from '../model/lesson';
 import { createHttpObservable } from '../common/util';
 
 @Component({
-  selector: 'course',
+  selector: 'app-course',
   templateUrl: './course.component.html',
   styleUrls: ['./course.component.css']
 })
@@ -45,7 +44,8 @@ export class CourseComponent implements OnInit, AfterViewInit {
     this.lessons$ = fromEvent<any>(this.input.nativeElement, 'keyup').pipe(
       map((event) => event.target.value),
       debounceTime(400), // delay of 400 ms
-      startWith(''), //the startWith operator emits the first value with the given value, which in this case, the empty string, mirar exampleWithStartWith():
+      startWith(''), // the startWith operator emits the first value with the given value,
+                     // which in this case, the empty string, mirar exampleWithStartWith():
       distinctUntilChanged(), // avoid duplicates
       switchMap((search) => this.loadLessons$(search))
     );
@@ -63,17 +63,17 @@ export class CourseComponent implements OnInit, AfterViewInit {
   }
 
   private loadLessons$(search?: string) {
-    return createHttpObservable(`/api/lessons?courseId=${this.courseId}&pageSize=100&filter=${search || ''}`).pipe(
+    return createHttpObservable(`/api/lessons?courseId=${this.courseId}&pageSize=100&filter=${search}`).pipe(
       map((response) => response['payload'])
     );
   }
 
   private exampleWithStartWith(): void {
-    //emit (1,2,3)
+    // emit (1,2,3)
     const source = of(1, 2, 3);
-    //start with 0
+    // start with 0
     const example = source.pipe(startWith(0));
-    //output: 0,1,2,3
+    // output: 0,1,2,3
     const subscribe = example.subscribe(val => console.log(val));
   }
 
@@ -92,5 +92,54 @@ export class CourseComponent implements OnInit, AfterViewInit {
       switchMap((search) => this.loadLessons$(search))
     )
     .subscribe(console.log);
+  }
+
+  private exampleWithFirst(): void {
+    // first Rxjs operators, forces the completion of an observable
+    // it only grabs the first value emitted and then, completes
+    const source$ = of([1, 2, 3, 4, 5], [11, 22, 33, 44, 55]);
+
+    source$.pipe(
+      first()
+    )
+    .subscribe(console.log);
+    // output: [1, 2, 3, 4, 5]
+  }
+
+  private exampleWithTake(): void {
+    // RxJs take operator, as well as first(), forces the completion of an observable
+    const source$ = of([1, 2, 3, 4, 5], [11, 22, 33, 44, 55]);
+    const source2$ = interval(1000);
+
+    source$.pipe(
+      take(2)
+    )
+    .subscribe(console.log); // output: [1, 2, 3, 4, 5], [11, 22, 33, 44, 55]
+
+    source2$.pipe(
+      take(1)
+    )
+    .subscribe(console.log); // output: 0
+  }
+
+  private exampleWithLastestFrom(): void {
+    // withLastestFrom is a RxJs operator that combines observables and
+    // takes the last value from it
+    const source1$ = of(1, 2, 3, 4, 5);
+    const source2$ = of('a', 'b', 'c', 'd');
+    const source3$ = of('casa', 'arbol', 'teja', 'nube');
+
+    const result0$ = source1$.pipe(
+      withLatestFrom(source2$)
+    );
+    // output: 1-d, 2-d, 3-d, 4-d, 5-d
+    result0$.subscribe(([number, letter]) => console.log(`${number}-${letter}`));
+
+    const result1$ = source2$.pipe(
+      withLatestFrom(source1$),
+      withLatestFrom(source3$)
+    );
+    // output: a-5-nube, b-5-nube, c-5-nube, d-5-nube
+    result1$.subscribe(([[letter, number], text]) => console.log(`${letter}-${number}-${text}`));
   }
 }
